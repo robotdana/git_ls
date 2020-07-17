@@ -1,19 +1,29 @@
 #!/usr/bin/env ruby --disable-all
 # frozen_string_literal: true
 
-print "require 'git_index':      "
+print "require 'git_ls':      "
 start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-require_relative '../lib/git_index'
+require_relative '../lib/git_ls'
 finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 puts (finish - start).to_s
 
-print 'GitIndex.new.to_a:        '
+print 'GitLS.files:           '
 start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-index_a = GitIndex.files
+index_a = GitLS.files
 finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-puts (finish - start).to_s
+time = (finish - start)
 
-print 'git ls-files:             '
+times = [time]
+(3.0/time).to_i.times do
+  start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  index_a = GitLS.files
+  finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  times << (finish - start)
+end
+
+puts (times.sum.to_f / times.length).to_s
+
+print 'git ls-files:          '
 start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 git_a = `git -c "core.quotepath=off" ls-files`.split("\n")
 finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -22,13 +32,13 @@ puts (finish - start).to_s
 exit_status = 0
 
 unless (index_a - git_a).empty?
-  puts "\e[31mIgnored by GitIndex, not by git:\e[0m"
+  puts "\e[31mIgnored by GitLS.files, not by git:\e[0m"
   (index_a - git_a).map { |f| puts f }
   exit_status = 1
 end
 
 unless (git_a - index_a).empty?
-  puts "\e[31mIgnored by git, not by GitIndex:\e[0m"
+  puts "\e[31mIgnored by git, not by GitLS.files:\e[0m"
   (git_a - index_a).map { |f| puts f }
   exit_status = 1
 end

@@ -1,15 +1,18 @@
-# GitIndex
+# GitLS.files
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/git_index`. To experiment with that code, run `bin/console` for an interactive prompt.
+Parses the .git/index file like `git ls-files` does.
 
-TODO: Delete this and the text above, and describe your gem
+- for small repos (as in, anything smaller than rails),
+  it can be significantly faster than doing the system call to git
+- still takes less than half a second for large repos e.g. the linux repo
+- doesn't require git to be installed
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'git_index'
+gem 'git_ls'
 ```
 
 And then execute:
@@ -18,21 +21,28 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install git_index
+    $ gem install git_ls
 
 ## Usage
 
-TODO: Write usage instructions here
+`GitLS.files` returns an array of filenames, equivalent to `git ls-files -z`.split("\0")
+`GitLS.files("path/to/repo")` if the repo is not $PWD.
+
+## Issues
+
+- Doesn't work for git version 4 files at all
+- Doesn't understand split index files at all
+- Has only 1 test
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+Have a look in the bin dir for some useful tools.
+To install this gem onto your local machine, run `bundle exec rake install`.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/git_index.
+Bug reports and pull requests are welcome on GitHub at https://github.com/robotdana/git_ls.
+If you're comfortable, please attach `.git/index` and the output of `git ls-files` where it doesn't match.
 
 
 ## License

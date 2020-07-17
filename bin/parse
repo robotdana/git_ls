@@ -3,4 +3,4 @@
 
 require_relative '../lib/git_ls'
 
-puts GitLS.files.join("\n")
+GitLS.files

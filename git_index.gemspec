@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require_relative 'lib/git_index/version'
+require_relative 'lib/git_ls/version'
 
 Gem::Specification.new do |spec|
   spec.name          = 'git_index'
-  spec.version       = GitIndex::VERSION
+  spec.version       = GitLS::VERSION
   spec.authors       = ['Dana Sherson']
   spec.email         = ['robot@dana.sh']
 
   spec.summary       = 'Read a .git/index file and list the files'
-  spec.homepage      = 'https://github.com/robotdana/git_index'
+  spec.homepage      = 'https://github.com/robotdana/git_ls'
   spec.license       = 'MIT'
   spec.required_ruby_version = Gem::Requirement.new('>= 2.4.0')
 
