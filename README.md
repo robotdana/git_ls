@@ -25,7 +25,7 @@ Or install it yourself as:
 
 ## Usage
 
-`GitLS.files` returns an array of filenames, equivalent to `git ls-files -z`.split("\0")
+`GitLS.files` returns an array of filenames, equivalent to `` `git ls-files -z`.split("\0") ``
 `GitLS.files("path/to/repo")` if the repo is not $PWD.
 
 ## Issues
@@ -48,3 +48,4 @@ If you're comfortable, please attach `.git/index` and the output of `git ls-file
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+# git_ls
