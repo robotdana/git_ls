@@ -19,10 +19,10 @@ module GitLS
       headers
 
       @files = Array.new(length)
-      case git_version
+      case git_index_version
       when 2 then files_2
       when 3 then files_3
-      when 4 then raise ::GitLS::Error, "4 is complicated git version, it's not done yet"
+      when 4 then files_4
       else raise ::GitLS::Error, 'Unrecognized git version'
       end
       @files
@@ -42,13 +42,55 @@ module GitLS
     def files_3
       @files.map! do
         @file.pos += 60 # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
-        flags = @file.read(2) # 2 bytes flags
-        # skip extend flags if extended flags bit set
-        @file.pos += 2 if flags && (flags.unpack1('n') & 0b0100_0000_0000_0000).positive?
+        flag = @file.getbyte
+        extended_flag_offset = if (flag & 0b0100_0000).positive?
+          3 # skip next half of flag + extended flags
+        else
+          1 # skip next half of flag
+        end
+        @file.pos += extended_flag_offset
 
         ret = @file.readline("\0").chop
-        @file.pos += 7 - ((ret.bytesize - 2) % 8) # 1-8 bytes padding of nuls
+        @file.pos += 7 - ((ret.bytesize + extended_flag_offset - 3) % 8) # 1-8 bytes padding of nuls
         ret
+      end
+    end
+
+    def files_4
+      prev_entry_path = ""
+      @files.map! do
+        @file.pos += 60 # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
+        flag = @file.getbyte
+        @file.pos += if (flag & 0b0100_0000).positive?
+          3 # skip next half of flag + extended flags
+        else
+          1 # skip next half of flag
+        end
+
+        # flags = @file.read(2) # 2 bytes flags
+        # # skip extend flags if extended flags bit set
+        # @file.pos += 2 if flags && (flags.unpack1('n') & 0b0100_0000_0000_0000).positive?
+
+        # documentation for this number from
+        # https://git-scm.com/docs/pack-format#_original_version_1_pack_idx_files_have_the_following_format
+        # offset encoding:
+        #   n bytes with MSB set in all but the last one.
+        #   The offset is then the number constructed by
+        #   concatenating the lower 7 bit of each byte, and
+        #   for n >= 2 adding 2^7 + 2^14 + ... + 2^(7*(n-1))
+        #   to the result.
+        read_offset = 0
+        prev_read_offset = @file.getbyte
+        n = 1
+        while (prev_read_offset & 0b1000_0000).positive?
+          read_offset += (prev_read_offset - 0b1000_0000)
+          read_offset += 2**(7 * n)
+          n += 1
+          prev_read_offset = @file.getbyte
+        end
+        read_offset += prev_read_offset
+
+        prev_entry_path = prev_entry_path.byteslice(0, prev_entry_path.bytesize - read_offset) + @file.readline("\0").chop
       end
     end
 
@@ -60,7 +102,7 @@ module GitLS
       headers[0] == 'DIRC'
     end
 
-    def git_version
+    def git_index_version
       @git_version = headers[1]
     end
 

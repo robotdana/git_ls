@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require 'bundler/setup'
+require 'simplecov' if RUBY_PLATFORM != 'java'
 require 'git_ls'
+require_relative 'support/temp_dir_helper'
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

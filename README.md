@@ -30,9 +30,7 @@ Or install it yourself as:
 
 ## Issues
 
-- Doesn't work for git version 4 files at all
 - Doesn't understand split index files at all
-- Has only 1 test
 
 ## Development
 

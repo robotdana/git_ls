@@ -13,6 +13,8 @@ module GitLS
     def files(path = ::Dir.pwd)
       path = ::File.join(path, '.git/index') if ::File.directory?(path)
       ::GitLS::Parser.new(::File.new(path)).files
+    rescue Errno::ENOENT => e
+      raise GitLS::Error, "Not a git directory: #{e.message}"
     end
   end
 end
