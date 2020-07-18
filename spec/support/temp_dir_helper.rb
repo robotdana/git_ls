@@ -17,6 +17,25 @@ module TempDirHelper
       path
     end
 
+    # def create_long_file_path(*lines, path:, git_add: true)
+    #   orig_dir = ::Dir.pwd
+    #   begin
+    #     path.parent.to_s.delete_prefix(orig_dir + '/').split('/').each do |dirname|
+    #       ::FileUtils.mkdir_p dirname
+    #       ::Dir.chdir dirname
+    #     end
+    #     if lines.empty?
+    #       path.basename.write('')
+    #     else
+    #       path.basename.write(lines.join("\n").chomp + "\n")
+    #     end
+    #   ensure
+    #     Dir.chdir(orig_dir)
+    #   end
+    #   system("git", "add", path.to_s) if git_add
+    #   path
+    # end
+
     def create_symlink(**arg)
       git_add = arg.delete(:git_add)
 

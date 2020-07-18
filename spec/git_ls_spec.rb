@@ -80,6 +80,17 @@ RSpec.describe GitLS do
           .and(eq(["foo/bar", "foo/#{'bar' * 60}", "foo/baz"]))
       end
     end
+
+    # context "with file with extremely long name" do
+    #   before do
+    #     create_file_list "foo/baa", "foo#{'/bar' * 1000}", "foo/baz"
+    #   end
+
+    #   it 'matches git-ls output' do
+    #     expect(GitLS.files).to eq(`git ls-files -z`.split("\0"))
+    #       .and(eq(["foo/baa", "foo#{'/bar' * 1000}", "foo/baz"]))
+    #   end
+    # end
   end
 
   describe '.files' do
@@ -102,7 +113,7 @@ RSpec.describe GitLS do
         create_file "DIRC\0\0\0\x5\0\0\0\0", path: '.git/index'
 
         expect { GitLS.files }.to raise_error(GitLS::Error)
-        expect(GitLS::Parser.new(::File.new('.git/index')).send(:git_index_version)).to eq 5
+        expect(GitLS.headers[:git_index_version]).to eq 5
       end
     end
 
