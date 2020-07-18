@@ -41,7 +41,10 @@ module GitLS
     rescue Errno::ENOENT => e
       raise GitLS::Error, "Not a git directory: #{e.message}"
     ensure
-      file.close
+      # :nocov:
+      # coverage tracking for branches in ensure blocks is weird
+      file&.close
+      # :nocov:
       files
     end
 
