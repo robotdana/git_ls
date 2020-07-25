@@ -15,9 +15,9 @@ module GitLS
       read(path, true)
     end
 
-  private
+    private
 
-    def read(path, return_headers_only)
+    def read(path, return_headers_only) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       path = ::File.join(path, '.git/index') if ::File.directory?(path)
       file = ::File.new(path)
       # 4-byte signature:
@@ -48,9 +48,7 @@ module GitLS
       files
     end
 
-    private
-
-    def files_2(files, file)
+    def files_2(files, file) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       files.map! do
         file.pos += 60 # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
         length = (file.getbyte & 0b0000_1111) * 256 + file.getbyte # find the 12 byte length
@@ -68,7 +66,7 @@ module GitLS
       end
     end
 
-    def files_3(files, file)
+    def files_3(files, file) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       files.map! do
         file.pos += 60 # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
 
@@ -92,8 +90,8 @@ module GitLS
       end
     end
 
-    def files_4(files, file)
-      prev_entry_path = ""
+    def files_4(files, file) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+      prev_entry_path = ''
       files.map! do
         file.pos += 60 # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
         flags = file.getbyte * 256 + file.getbyte
