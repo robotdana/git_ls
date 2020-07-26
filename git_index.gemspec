@@ -3,14 +3,14 @@
 require_relative 'lib/git_ls/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'git_ls'
-  spec.version       = GitLS::VERSION
-  spec.authors       = ['Dana Sherson']
-  spec.email         = ['robot@dana.sh']
+  spec.name = 'git_ls'
+  spec.version = GitLS::VERSION
+  spec.authors = ['Dana Sherson']
+  spec.email = ['robot@dana.sh']
 
-  spec.summary       = 'Read a .git/index file and list the files'
-  spec.homepage      = 'https://github.com/robotdana/git_ls'
-  spec.license       = 'MIT'
+  spec.summary = 'Read a .git/index file and list the files'
+  spec.homepage = 'https://github.com/robotdana/git_ls'
+  spec.license = 'MIT'
   spec.required_ruby_version = Gem::Requirement.new('>= 2.4.0')
 
   if spec.respond_to?(:metadata)
@@ -28,6 +28,12 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_development_dependency 'bundler', '>= 2'
+  spec.add_development_dependency 'leftovers'
   spec.add_development_dependency 'pry', '> 0'
+  spec.add_development_dependency 'rake', '>= 12.3.3'
+  spec.add_development_dependency 'rubocop'
+  spec.add_development_dependency 'rubocop-performance'
+  spec.add_development_dependency 'rubocop-rspec'
   spec.add_development_dependency 'simplecov', '~> 0.18.5'
+  spec.add_development_dependency 'spellr'
 end

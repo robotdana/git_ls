@@ -14,7 +14,7 @@ finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 time = (finish - start)
 
 times = [time]
-(3.0/time).to_i.times do
+(3.0 / time).to_i.times do
   start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
   index_a = GitLS.files
   finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
