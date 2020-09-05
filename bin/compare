@@ -1,33 +1,30 @@
-#!/usr/bin/env ruby --disable-all
+#!/usr/bin/env ruby
 # frozen_string_literal: true
 
-print "require 'git_ls':      "
+GC.disable
+
+# for consistent times:
+# use mac terminal not vs code terminal
+# ensure nothing else is watching that dir in the filesystem e.g. webpack, docker, rails
+
+print 'require GitLS.files:   '
 start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 require_relative '../lib/git_ls'
+GitLS.files
 finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-puts (finish - start).to_s
+puts(format('%<val>.20f', val: (finish - start)))
 
 print 'GitLS.files:           '
 start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 index_a = GitLS.files
 finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-time = (finish - start)
-
-times = [time]
-(3.0 / time).to_i.times do
-  start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-  index_a = GitLS.files
-  finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-  times << (finish - start)
-end
-
-puts (times.sum.to_f / times.length).to_s
+puts(format('%<val>.20f', val: (finish - start)))
 
 print 'git ls-files:          '
 start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-git_a = `git -c "core.quotepath=off" ls-files`.split("\n")
+git_a = `git -c core.quotepath=off ls-files -z`.split("\0")
 finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-puts (finish - start).to_s
+puts(format('%<val>.20f', val: (finish - start)))
 
 exit_status = 0
 

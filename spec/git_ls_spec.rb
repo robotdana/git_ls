@@ -16,8 +16,8 @@ RSpec.describe GitLS do
           .and(eq(['bar/bar', 'bar/foo', 'baz', 'foo/bar', 'foo/foo']))
       end
 
-      it 'can be given the .git/index file directly' do
-        expect(described_class.files('.git/index')).to eq(`git ls-files -z`.split("\0"))
+      it 'can be given the file path exactly' do
+        expect(described_class.files(::Dir.pwd)).to eq(`git ls-files -z`.split("\0"))
           .and(eq(['bar/bar', 'bar/foo', 'baz', 'foo/bar', 'foo/foo']))
       end
 
@@ -70,6 +70,17 @@ RSpec.describe GitLS do
       end
     end
 
+    context 'with a non-ascii file name' do
+      before do
+        create_file path: '💖'
+      end
+
+      it 'matches git-ls output' do
+        expect(described_class.files).to eq(`git -c core.quotePath=off ls-files -z`.split("\0"))
+          .and(eq(['💖']))
+      end
+    end
+
     context 'with file with long name' do
       before do
         create_file_list 'foo/bar', "foo/#{'bar' * 60}", 'foo/baz'
@@ -80,17 +91,6 @@ RSpec.describe GitLS do
           .and(eq(['foo/bar', "foo/#{'bar' * 60}", 'foo/baz']))
       end
     end
-
-    # context "with file with extremely long name" do
-    #   before do
-    #     create_file_list "foo/baa", "foo#{'/bar' * 1000}", "foo/baz"
-    #   end
-
-    #   it 'matches git-ls output' do
-    #     expect(described_class.files).to eq(`git ls-files -z`.split("\0"))
-    #       .and(eq(["foo/baa", "foo#{'/bar' * 1000}", "foo/baz"]))
-    #   end
-    # end
   end
 
   describe '.files' do
@@ -112,8 +112,7 @@ RSpec.describe GitLS do
       it 'raises an error when .git/index file is a non recognized version' do
         create_file "DIRC\0\0\0\x5\0\0\0\0", path: '.git/index'
 
-        expect { described_class.files }.to raise_error(described_class::Error)
-        expect(described_class.headers[:git_index_version]).to eq 5
+        expect { described_class.files }.to raise_error(described_class::Error, "Unrecognized git index version '5'")
       end
     end
 

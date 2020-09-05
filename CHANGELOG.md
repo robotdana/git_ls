@@ -1,3 +1,6 @@
+# 0.5.0
+- Major Performance Improvements
+
 # 0.4.0
 - Handles split index files
 

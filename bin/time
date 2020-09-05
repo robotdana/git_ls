@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+GC.disable
+
+# for consistent times:
+# use mac terminal not vs code terminal
+# ensure nothing else is watching that dir in the filesystem e.g. webpack, docker, rails
+
+require 'open3'
+require 'shellwords'
+RUNS = 30
+SCRIPT = ['time', '-p', "#{__dir__}/#{ARGV.fetch(0, 'ls')}"].freeze
+
+times = Array.new(RUNS).map do
+  run_times = Open3.capture3(*SCRIPT)[1].gsub("\n", ' ')
+  puts run_times.lstrip
+  run_times.scan(/(?:\d+(?:.\d+)?)/)
+end
+
+puts format(
+  "\e[1mAverage:\n\e[32mreal%13.2f user%13.2f sys%14.2f \e[0m", # rubocop:disable Style/FormatStringToken
+  *times.transpose.map { |n| (n.map(&:to_f).sum / RUNS) }
+)

@@ -20,6 +20,7 @@ params
 pwd
 quotepath
 rdoc
+readme
 rspec
 rubo
 rubocop
@@ -30,4 +31,6 @@ simplecov
 sudo
 tmp
 usr
+utf
+warmup
 yardoc
