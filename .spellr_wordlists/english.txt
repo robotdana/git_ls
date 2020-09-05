@@ -24,6 +24,7 @@ rspec
 rubo
 rubocop
 rvm
+sharedindex
 sherson
 simplecov
 sudo

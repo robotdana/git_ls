@@ -3,8 +3,8 @@
 Parses the .git/index file like `git ls-files` does.
 
 - for small repos (as in, anything smaller than rails),
-  it can be significantly faster than doing the system call to git
-- still takes less than half a second for large repos e.g. the linux repo
+  it can be faster than doing the system call to git
+- still takes less than half a second for very large repos e.g. the linux repo
 - doesn't require git to be installed
 
 ## Installation
@@ -28,10 +28,6 @@ Or install it yourself as:
 `GitLS.files` returns an array of filenames, equivalent to `` `git ls-files -z`.split("\0") ``
 `GitLS.files("path/to/repo")` if the repo is not $PWD.
 
-## Issues
-
-- Doesn't understand split index files at all
-
 ## Development
 
 Have a look in the bin dir for some useful tools.
@@ -40,7 +36,7 @@ To install this gem onto your local machine, run `bundle exec rake install`.
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/robotdana/git_ls.
-If you're comfortable, please attach `.git/index` and the output of `git ls-files` where it doesn't match.
+If you're comfortable, please attach `.git/index` (and `.git/sharedindex.<sha>` if applicable) and the output of `git ls-files` where it doesn't match.
 
 
 ## License

@@ -133,6 +133,9 @@ RSpec:
 RSpec/DescribeClass:
   Enabled: false
 
+RSpec/ExampleLength:
+  Enabled: false
+
 # I misuse matchers often
 RSpec/ExpectActual:
   Enabled: false

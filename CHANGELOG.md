@@ -1,3 +1,6 @@
+# 0.4.0
+- Handles split index files
+
 # 0.3.0
 - Improve performance by reading the size in flags
 

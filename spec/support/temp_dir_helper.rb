@@ -11,7 +11,7 @@ module TempDirHelper
       if lines.empty?
         path.write('')
       else
-        path.write(lines.join("\n").chomp + "\n")
+        path.write("#{lines.join("\n").chomp}\n")
       end
       system('git', 'add', path.to_s) if git_add
       path
@@ -51,7 +51,7 @@ module TempDirHelper
     Dir.chdir(dir)
 
     extend WithinTempDir
-    system('git init') if git_init
+    `git init` if git_init
     yield
   ensure
     Dir.chdir(original_dir)
