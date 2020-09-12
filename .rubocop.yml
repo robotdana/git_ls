@@ -118,6 +118,7 @@ Metrics/BlockLength:
     - describe
     - context
     - shared_examples
+    - benchmark
 
 Metrics/CyclomaticComplexity:
   Enabled: false
@@ -224,3 +225,20 @@ Style/HashTransformValues:
 
 Style/CommentedKeyword:
   Enabled: false
+
+Style/CaseLikeIf:
+  Enabled: false
+
+Style/NumericPredicate:
+  Enabled: false
+
+Style/Semicolon:
+  Exclude:
+    - bin/benchmark
+
+Naming/VariableNumber:
+  Enabled: false
+
+Lint/Void:
+  Exclude:
+    - bin/benchmark

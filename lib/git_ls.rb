@@ -3,105 +3,100 @@
 # Usage:
 #   GitLS.files -> Array of strings as files.
 #   This will be identical output to git ls-files
+require 'stringio'
+
 module GitLS # rubocop:disable Metrics/ModuleLength
   class Error < StandardError; end
 
   class << self
-    def files(path = ::Dir.pwd)
-      read(path, false)
-    end
+    def files(path = nil)
+      path = path ? ::File.join(path, '.git/index') : '.git/index'
 
-    def headers(path = ::Dir.pwd)
-      read(path, true)
+      read(path, false)
     end
 
     private
 
-    def read(path, return_headers_only) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
-      path = ::File.join(path, '.git/index') if ::File.directory?(path)
-      file = ::File.new(path)
+    def read(path, _return_headers_only) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+      begin
+        # reading the whole file into memory is faster than lots of ::File#read
+        # the biggest it's going to be is 10s of megabytes, well within ram.
+        file = ::StringIO.new(::File.read(path, mode: 'rb'))
+      rescue ::Errno::ENOENT => e
+        raise ::GitLS::Error, "Not a git directory: #{e.message}"
+      end
+
       buf = ::String.new
       # 4-byte signature:
       # The signature is { 'D', 'I', 'R', 'C' } (stands for "dircache")
       # 4-byte version number:
       # The current supported versions are 2, 3 and 4.
       # 32-bit number of index entries.
-      sig, git_index_version, length = file.read(12, buf).unpack('a4NN')
-      raise ::GitLS::Error, ".git/index file not found at #{path}" unless sig == 'DIRC'
+      sig = file.read(4, buf)
+      raise ::GitLS::Error, ".git/index file not found at '#{path}'" unless sig == 'DIRC'
 
-      return { git_index_version: git_index_version, length: length } if return_headers_only
+      git_index_version = file.read(4, buf).unpack1('N')
+      entries = file.read(4, buf).unpack1('N')
 
-      files = ::Array.new(length)
-      case git_index_version
+      files = ::Array.new(entries)
+      files = case git_index_version
       when 2 then files_2(files, file)
       when 3 then files_3(files, file)
       when 4 then files_4(files, file)
-      else raise ::GitLS::Error, 'Unrecognized git index version'
+      else raise ::GitLS::Error, "Unrecognized git index version '#{git_index_version}'"
       end
 
-      extensions(files, file, buf)
-      files
-    rescue ::Errno::ENOENT => e
-      raise ::GitLS::Error, "Not a git directory: #{e.message}"
-    ensure
-      # :nocov:
-      # coverage tracking for branches in ensure blocks is weird
-      file&.close
-      # :nocov:
-      files
+      read_extensions(files, file, path, buf)
     end
 
-    def extensions(files, file, buf)
-      case file.read(4, buf)
-      when 'link' then link_extension(files, file, buf)
-      when /[A-Z]{4}/ then ignored_extension(files, file, buf)
+    def read_extensions(files, file, path, buf) # rubocop:disable Metrics/MethodLength
+      extension = file.read(4, buf)
+      if extension == 'link'
+        read_link_extension(files, file, path, buf)
+      elsif extension.match?(/\A[A-Z]{4}\z/)
+        size = file.read(4, buf).unpack1('N')
+        file.seek(size, 1)
+        read_extensions(files, file, path, buf)
       else
-        return if (file.pos += 16) && file.eof?
+        return files if file.seek(16, 1) && file.eof?
 
-        raise ::GitLS::Error, "Unrecognized .git/index extension #{buf.inspect}"
+        raise ::GitLS::Error, "Unrecognized .git/index extension #{extension.inspect}"
       end
     end
 
-    def ignored_extension(files, file, buf)
-      size = file.read(4, buf).unpack1('N')
-      file.pos += size
-      extensions(files, file, buf)
-    end
-
-    def link_extension(files, file, buf) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
-      file.pos += 4 # size = file.read(4, buf).unpack1('N')
+    def read_link_extension(files, file, path, buf) # rubocop:disable Metrics/MethodLength
+      file.seek(4, 1) # skip size
 
       sha = file.read(20, buf)
 
-      new_files = files.dup
-
-      files.replace files("#{::File.dirname(file.path)}/sharedindex.#{sha.unpack1('H*')}")
+      split_files = read("#{::File.dirname(path)}/sharedindex.#{sha.unpack1('H*')}", false)
 
       ewah_each_value(file, buf) do |pos|
-        files[pos] = nil
+        split_files[pos] = nil
       end
 
       ewah_each_value(file, buf) do |pos|
-        replacement_file = new_files.shift
+        replacement_file = files.shift
         # the documentation *implies* that this *may* get a new filename
         # i can't get it to happen though
         # :nocov:
-        files[pos] = replacement_file unless replacement_file.empty?
+        split_files[pos] = replacement_file unless replacement_file.empty?
         # :nocov:
       end
 
-      files.compact!
-      files.concat(new_files)
-      files.sort!
+      split_files.compact!
+      split_files.concat(files)
+      split_files.sort!
 
-      extensions(files, file, buf)
+      read_extensions(split_files, file, path, buf)
     end
 
     # format is defined here:
     # https://git-scm.com/docs/bitmap-format#_appendix_a_serialization_format_for_an_ewah_bitmap
     def ewah_each_value(file, buf) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       uncompressed_pos = 0
-      file.pos += 4 # uncompressed_bits_count = file.read(4, buf).unpack1('N')
+
+      file.seek(4, 1) # skip 4 byte uncompressed_bits_count.
       compressed_bytes = file.read(4, buf).unpack1('N') * 8
 
       final_file_pos = file.pos + compressed_bytes
@@ -110,10 +105,10 @@ module GitLS # rubocop:disable Metrics/ModuleLength
         run_length_word = file.read(8, buf).unpack1('Q>')
         # 1st bit
         run_bit = run_length_word & 1
-        # the next 32 bits, masked, multiplied by 64 (which is shifted by 6 places)
-        run_length = ((run_length_word >> 1) & 0xFFFF_FFFF) << 6
+        # the next 32 bits, masked, multiplied by 64
+        run_length = ((run_length_word / 0b1_0) & 0xFFFF_FFFF) * 64
         # the next 31 bits
-        literal_length = (run_length_word >> 33)
+        literal_length = (run_length_word / 0b100000000_00000000_00000000_00000000_0)
 
         if run_bit == 1
           run_length.times do
@@ -124,9 +119,11 @@ module GitLS # rubocop:disable Metrics/ModuleLength
           uncompressed_pos += run_length
         end
 
-        literal_length.times do
-          word = file.read(8, buf).unpack1('B*').reverse
-          word.each_char do |char|
+        next unless literal_length > 0
+
+        words = file.read(8 * literal_length, buf).unpack('B64' * literal_length)
+        words.each do |word|
+          word.each_char.reverse_each do |char|
             yield(uncompressed_pos) if char == '1'
 
             uncompressed_pos += 1
@@ -134,47 +131,52 @@ module GitLS # rubocop:disable Metrics/ModuleLength
         end
       end
 
-      file.pos += 4 # bitmap metadata for adding to bitmaps
+      file.seek(4, 1) # bitmap metadata for adding to bitmaps
     end
 
     def files_2(files, file) # rubocop:disable Metrics/MethodLength
       files.map! do
-        file.pos += 60 # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
-        length = ((file.getbyte & 0b0000_1111) << 8) + file.getbyte # find the 12 byte length
+        file.seek(60, 1) # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
+
+        length = (file.getbyte & 0xF) * 256 + file.getbyte # find the 12 byte length
         if length < 0xFFF
           path = file.read(length)
           # :nocov:
         else
           # i can't test this i just get ENAMETOOLONG a lot
-          path = file.readline("\0").chop
-          file.pos -= 1
+          # I'm not sure it's even possible to get to this path, PATH_MAX is 4096 bytes on linux, 1024 on mac
+          # and length is a 12 byte number: 4096 max.
+          path = file.readline("\0").chop!
+          file.seek(-1, 1)
           # :nocov:
         end
-        file.pos += 8 - ((length - 2) % 8) # 1-8 bytes padding of nuls
+        file.seek(8 - ((length - 2) % 8), 1) # 1-8 bytes padding of nuls
+        path.force_encoding(Encoding::UTF_8)
         path
       end
     end
 
     def files_3(files, file) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       files.map! do
-        file.pos += 60 # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
+        file.seek(60, 1) # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
+        flags = file.getbyte
+        extended_flag = (flags & 0b0100_0000) > 0
+        length = (flags & 0xF) * 256 + file.getbyte # find the 12 byte length
+        file.seek(2, 1) if extended_flag
 
-        flags = file.getbyte * 256 + file.getbyte
-        extended_flag = (flags & 0b0100_0000_0000_0000).positive?
-        file.pos += 2 if extended_flag
-
-        length = flags & 0b0000_1111_1111_1111
         if length < 0xFFF
           path = file.read(length)
           # :nocov:
         else
           # i can't test this i just get ENAMETOOLONG a lot
-          path = file.readline("\0").chop
-          file.pos -= 1
+          # I'm not sure it's even possible to get to this path, PATH_MAX is 4096 bytes on linux, 1024 on mac
+          # and length is a 12 byte number: 4096 max.
+          path = file.readline("\0").chop!
+          file.seek(-1, 1)
           # :nocov:
         end
-
-        file.pos += 8 - ((path.bytesize - (extended_flag ? 0 : 2)) % 8) # 1-8 bytes padding of nuls
+        file.seek(8 - ((path.bytesize - (extended_flag ? 0 : 2)) % 8), 1) # 1-8 bytes padding of nuls
+        path.force_encoding(Encoding::UTF_8)
         path
       end
     end
@@ -182,11 +184,11 @@ module GitLS # rubocop:disable Metrics/ModuleLength
     def files_4(files, file) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       prev_entry_path = ''
       files.map! do
-        file.pos += 60 # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
-        flags = file.getbyte * 256 + file.getbyte
-        file.pos += 2 if (flags & 0b0100_0000_0000_0000).positive?
-
-        length = flags & 0b0000_1111_1111_1111
+        file.seek(60, 1) # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
+        flags = file.getbyte
+        extended_flag = (flags & 0b0100_0000) > 0
+        length = (flags & 0xF) * 256 + file.getbyte # find the 12 byte length
+        file.seek(2, 1) if extended_flag
 
         # documentation for this number from
         # https://git-scm.com/docs/pack-format#_original_version_1_pack_idx_files_have_the_following_format
@@ -199,8 +201,8 @@ module GitLS # rubocop:disable Metrics/ModuleLength
         read_offset = 0
         prev_read_offset = file.getbyte
         n = 1
-        while (prev_read_offset & 0b1000_0000).positive?
-          read_offset += (prev_read_offset - 0b1000_0000)
+        while (prev_read_offset & 0b1000_0000) > 0
+          read_offset += (prev_read_offset & 0b0111_1111)
           read_offset += 2**(7 * n)
           n += 1
           prev_read_offset = file.getbyte
@@ -211,15 +213,19 @@ module GitLS # rubocop:disable Metrics/ModuleLength
 
         if length < 0xFFF
           rest = file.read(length - initial_part_length)
-          file.pos += 1 # the NUL
+          file.seek(1, 1) # the NUL
           # :nocov:
         else
           # i can't test this i just get ENAMETOOLONG a lot
-          rest = file.readline("\0").chop
+          # I'm not sure it's even possible to get to this path, PATH_MAX is 4096 bytes on linux, 1024 on mac
+          # and length is a 12 byte number: 4096 max.
+          rest = file.readline("\0").chop!
+          file.seek(-1, 1)
           # :nocov:
         end
 
         prev_entry_path = prev_entry_path.byteslice(0, initial_part_length) + rest
+        prev_entry_path.force_encoding(Encoding::UTF_8)
       end
     end
   end

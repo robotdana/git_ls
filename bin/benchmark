@@ -1,0 +1,522 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'bundler/setup'
+require 'benchmark/ips'
+require 'tempfile'
+require 'stringio'
+
+# from benchmark/ips readme
+class GCSuite
+  def warming(*) # leftovers:allow
+    run_gc
+  end
+
+  def running(*) # leftovers:allow
+    run_gc
+  end
+
+  def warmup_stats(*); end # leftovers:allow
+
+  def add_report(*); end # leftovers:allow
+
+  private
+
+  def run_gc
+    GC.enable
+    GC.start
+    GC.disable
+  end
+end
+
+GC.disable
+
+config = { suite: GCSuite.new, time: 3, warmup: 0.1 }
+
+def benchmark(label)
+  if ARGV.empty?
+    puts ''
+    puts "#{label}:"
+  else
+    return unless ARGV.include?(label)
+  end
+
+  yield
+  puts ''
+end
+
+benchmark('getbyte-readbyte') do
+  file = ::Tempfile.new
+  file.write('a')
+  file.rewind
+
+  raise unless file.getbyte == 0x61
+
+  file.rewind
+  raise unless file.readbyte == 0x61
+
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:getbyte) { file.getbyte; file.rewind }
+    x.report(:readbyte) { file.readbyte; file.rewind }
+    x.report(:getbyte_at_end) { file.pos += 1; file.getbyte; file.rewind }
+    # x.report(:readbyte_at_end) { file.pos += 1; file.readbyte; file.rewind }
+    # x.report(:rewind) {file.pos = 1; file.rewind }
+
+    x.compare!
+  end
+
+  file.close
+  file.unlink
+end
+
+benchmark('stringio-getbyte-readbyte') do
+  file = ::StringIO.new
+  file.write('a')
+  file.rewind
+
+  raise unless file.getbyte == 0x61
+
+  file.rewind
+  raise unless file.readbyte == 0x61
+
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:getbyte) { file.getbyte; file.rewind }
+    x.report(:readbyte) { file.readbyte; file.rewind }
+    x.report(:getbyte_at_end) { file.pos += 1; file.getbyte; file.rewind }
+    # x.report(:readbyte_at_end) { file.pos += 1; file.readbyte; file.rewind }
+    # x.report(:rewind) {file.pos = 1; file.rewind }
+
+    x.compare!
+  end
+end
+
+benchmark('2byte') do
+  file = ::Tempfile.new
+  file.write('ab')
+  file.rewind
+
+  raise unless ((file.getbyte * 256) + file.getbyte) == 0x6162
+
+  file.rewind
+  raise unless file.read(2).unpack1('n') == 0x6162
+
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:getbyte_getbyte) { (file.getbyte * 256) + file.getbyte; file.rewind }
+    x.report(:read_unpack) { file.read(2).unpack1('n'); file.rewind }
+    # x.report(:rewind) { file.pos = 1; file.rewind }
+
+    x.compare!
+  end
+
+  file.close
+  file.unlink
+end
+
+benchmark('stringio-2byte') do
+  file = ::StringIO.new
+  buf = ::String.new
+  file.write('ab' * 31)
+  file.rewind
+
+  raise unless ((file.getbyte * 256) + file.getbyte) == 0x6162
+
+  file.rewind
+  raise unless file.read(2).unpack1('n') == 0x6162
+
+  file.rewind
+
+  raise unless file.seek(60, 1); ((file.getbyte * 256) + file.getbyte) == 0x6162
+
+  file.rewind
+  raise unless file.read(62).unpack1('x60n') == 0x6162
+
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:getbyte_getbyte) { (file.getbyte * 256) + file.getbyte; file.rewind }
+    x.report(:read_buf_unpack) { file.read(2, buf).unpack1('n'); file.rewind }
+
+    x.report(:seek_getbyte_getbyte) { file.seek(60, 1); (file.getbyte * 256) + file.getbyte; file.rewind }
+    x.report(:read_buf_unpack_x) { file.read(62, buf).unpack1('x60n'); file.rewind }
+    # x.report(:rewind) { file.pos = 1; file.rewind }
+
+    x.compare!
+  end
+end
+
+benchmark('stringio-4byte') do
+  file = ::StringIO.new
+  buf = ::String.new
+  file.write('ab' * 32)
+  file.rewind
+
+  raise unless (((file.getbyte * 256) + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte == 0x61626162
+
+  file.rewind
+  raise unless file.read(4).unpack1('N') == 0x61626162
+
+  file.rewind
+
+  raise unless file.string.unpack1('N') == 0x61626162
+
+  file.rewind
+
+  file.seek(60, 1)
+  raise unless (((file.getbyte * 256) + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte == 0x61626162
+
+  file.rewind
+  raise unless file.read(64).unpack1('x60N') == 0x61626162
+
+  file.rewind
+
+  raise unless file.string.unpack1('x60N') == 0x61626162
+
+  file.seek(64, 1)
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:getbyte_getbyte) do
+      (((file.getbyte * 256) + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte; file.rewind
+    end
+    x.report(:read_buf_unpack) { file.read(4, buf).unpack1('N'); file.rewind }
+    x.report(:unpack_seek) { file.string.unpack1('N'); file.seek(4, 1); file.rewind }
+
+    x.report(:seek_getbyte_getbyte) do
+      file.seek(60, 1); (((file.getbyte * 256) + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte; file.rewind
+    end
+    x.report(:seek_unpack_seek) { file.string.unpack1('x60N'); file.seek(4, 1); file.rewind }
+    x.report(:x_unpack_seek) { file.string.unpack1('x60N'); file.seek(64, 1); file.rewind }
+    x.report(:read_buf_unpack_x) { file.read(64, buf).unpack1('x60N'); file.rewind }
+    # x.report(:rewind) { file.pos = 1; file.rewind }
+
+    x.compare!
+  end
+end
+
+benchmark('stringio-8byte') do
+  file = ::StringIO.new
+  buf = ::String.new
+  file.write('ab' * 34)
+  file.rewind
+
+  val = ((((((file.getbyte * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 +
+  file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte
+
+  raise unless val == 0x6162616261626162
+
+  file.rewind
+  raise unless file.read(8).unpack1('Q>') == 0x6162616261626162
+
+  file.rewind
+
+  raise unless file.string.unpack1('Q>') == 0x6162616261626162
+
+  file.rewind
+
+  file.seek(60, 1)
+  val = ((((((file.getbyte * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 +
+  file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte
+  raise unless val == 0x6162616261626162
+
+  file.rewind
+  raise unless file.read(68).unpack1('x60Q>') == 0x6162616261626162
+
+  file.rewind
+
+  raise unless file.string.unpack1('x60Q>') == 0x6162616261626162
+
+  file.seek(68, 1)
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:getbyte_getbyte) do
+      ((((((file.getbyte * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 +
+      file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte
+      file.rewind
+    end
+    x.report(:read_buf_unpack) { file.read(8, buf).unpack1('Q>'); file.rewind }
+    x.report(:unpack_seek) { file.string.unpack1('Q>'); file.seek(8, 1); file.rewind }
+
+    x.report(:seek_getbyte_getbyte) do
+      file.seek(60, 1)
+      ((((((file.getbyte * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 +
+      file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte
+      file.rewind
+    end
+    x.report(:seek_unpack_seek) { file.string.unpack1('x60Q>'); file.seek(8, 1); file.rewind }
+    x.report(:x_unpack_seek) { file.string.unpack1('x60Q>'); file.seek(68, 1); file.rewind }
+    x.report(:read_buf_unpack_x) { file.read(68, buf).unpack1('x60Q>'); file.rewind }
+    # x.report(:rewind) { file.pos = 1; file.rewind }
+
+    x.compare!
+  end
+end
+
+benchmark('ignore-seek-skip') do
+  file = ::Tempfile.new
+  skip_n = 600
+
+  skip_n_plus_2 = skip_n + 2
+  ignore_str = "a#{skip_n}n"
+  skip_str = "x#{skip_n}n"
+  n_str = 'n'
+
+  file.write("#{('c' * skip_n)}ab")
+  file.rewind
+
+  _, val = file.read(skip_n_plus_2).unpack(ignore_str)
+  raise unless val == 0x6162
+
+  file.rewind
+
+  file.seek(skip_n, 1)
+  raise unless file.read(2).unpack1(n_str) == 0x6162
+
+  file.rewind
+
+  raise unless file.read(skip_n_plus_2).unpack1(skip_str) == 0x6162
+
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:ignore_read) { _, val = file.read(skip_n_plus_2).unpack(ignore_str); file.rewind }
+    x.report(:skip_read) { val = file.read(skip_n_plus_2).unpack1(skip_str); file.rewind }
+    x.report(:seek_read) { file.seek(skip_n, 1); val = file.read(2).unpack1(n_str); file.rewind }
+    # x.report(:rewind) { file.pos = 3; file.rewind }
+
+    x.compare!
+  end
+
+  file.close
+  file.unlink
+end
+
+benchmark('stringio-ignore-seek-skip') do
+  file = ::StringIO.new
+  skip_n = 600
+
+  skip_n_plus_2 = skip_n + 2
+  ignore_str = "a#{skip_n}n"
+  skip_str = "x#{skip_n}n"
+  n_str = 'n'
+
+  file.write("#{('c' * skip_n)}ab")
+  file.rewind
+
+  _, val = file.read(skip_n_plus_2).unpack(ignore_str)
+  raise unless val == 0x6162
+
+  file.rewind
+
+  file.seek(skip_n, 1)
+  raise unless file.read(2).unpack1(n_str) == 0x6162
+
+  file.rewind
+
+  raise unless file.read(skip_n_plus_2).unpack1(skip_str) == 0x6162
+
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:ignore_read) { _, val = file.read(skip_n_plus_2).unpack(ignore_str); file.rewind }
+    x.report(:skip_read) { val = file.read(skip_n_plus_2).unpack1(skip_str); file.rewind }
+    x.report(:seek_read) { file.seek(skip_n, 1); val = file.read(2).unpack1(n_str); file.rewind }
+    # x.report(:rewind) { file.pos = 3; file.rewind }
+
+    x.compare!
+  end
+end
+
+benchmark('1byte') do
+  file = ::Tempfile.new
+  file.write('a')
+  file.rewind
+
+  raise unless file.getbyte == 0x61
+
+  file.rewind
+  raise unless file.read(1).unpack1('C') == 0x61
+
+  file.rewind
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:getbyte) { file.getbyte; file.rewind }
+    x.report(:read_unpack) { file.read(1).unpack1('C'); file.rewind }
+    # x.report(:rewind) { file.pos = 1; file.rewind }
+
+    x.compare!
+  end
+
+  file.close
+  file.unlink
+end
+
+benchmark('read-buf') do
+  file = ::Tempfile.new
+  file.write('ab')
+  file.rewind
+
+  buf = ::String.new
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:read_no_buf) { file.read(2); file.rewind }
+    x.report(:read_buf) { file.read(2, buf); file.rewind }
+    # x.report(:rewind) { file.pos = 1; file.rewind }
+
+    x.compare!
+  end
+
+  file.close
+  file.unlink
+end
+
+benchmark('pos-seek') do
+  file = ::Tempfile.new
+  file.write('pos')
+  file.rewind
+
+  buf = ::String.new
+
+  raise unless (file.rewind; file.pos += 1; file.pos += 2; file.pos) == 3
+  raise unless (file.rewind; file.seek(1, 1); file.seek(2, 1); file.pos) == 3
+  raise unless (file.rewind; file.read(3, buf); file.pos) == 3
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:pos) { file.pos += 3; file.rewind }
+    x.report(:seek) { file.seek(3, 1); file.rewind }
+    x.report(:read) { file.read(3, buf); file.rewind }
+    # x.report(:rewind) { file.pos = 3; file.rewind }
+
+    x.compare!
+  end
+
+  file.close
+  file.unlink
+end
+
+benchmark('shift-mult') do
+  raise unless (2 << 8) == (2 * 256)
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:shift, '2 << 8')
+    x.report(:mult, '2 * 256')
+
+    x.compare!
+  end
+end
+
+benchmark('shift-div') do
+  raise unless (0b1_0000_0000 >> 8) == 1
+  raise unless (0b1_0000_0000 / 256) == 1
+  raise unless (0b1_1111_1111 >> 8) == 1
+  raise unless (0b1_1111_1111 / 256) == 1
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:shift, '0b1_0000_0000 >> 8')
+    x.report(:div, '0b1_0000_0000 / 256')
+    x.report(:shift_noise, '0b1_1111_1111 >> 8')
+    x.report(:div_noise, '0b1_1111_1111 / 256')
+
+    x.report(:shift_small, '0b1_1111_1110 >> 1')
+    x.report(:div_small, '0b1_1111_1110 / 2')
+
+    x.compare!
+  end
+end
+
+benchmark('and-odd') do
+  raise unless (3 & 1) && 1.odd?
+  raise unless (0xFFFF_FFFF & 1) && 0xFFFF_FFFF.odd?
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:odd?, '3.odd?')
+    x.report(:and, '3 & 1')
+
+    x.report(:large_odd?, '0xFFFF_FFFF.odd?')
+    x.report(:large_and, '0xFFFF_FFFF & 1')
+
+    x.compare!
+  end
+end
+
+benchmark('positive_zero') do
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:gt_zero, '1 > 0')
+    x.report(:positive?, '1.positive?')
+
+    x.report(:large_gt_zero, '0xFFFF_FFFF > 0')
+    x.report(:large_positive?, '0xFFFF_FFFF.positive?')
+
+    x.compare!
+  end
+end
+
+benchmark('bit_set') do
+  raise unless (0b10_1010_0101 & 0b0010_0000) > 0
+  raise unless (0b10_1010_0101 / 1_000_000) & 1
+  raise unless (0b00_0010_0000 / 1_000_000) & 1
+
+  raise unless 0b10_1010_0101.anybits?(0b10_0000)
+  raise unless 0b00_0010_0000.anybits?(0b10_0000)
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:mask_gt_zero, '(0b10_1010_0101 & 0b10_0000) > 0')
+    x.report(:div_mask, '(0b10_1010_0101 / 100_0000) & 1')
+    x.report(:anybits?, '0b10_1010_0101.anybits?(0b10_0000)')
+
+    x.compare!
+  end
+end
+
+benchmark('map-shovel') do
+  raise unless (a = Array.new(10); a.map! { |_x| 'n' }; a) == %w{n n n n n n n n n n}
+  raise unless (a = []; 10.times { a << 'n' }; a) == %w{n n n n n n n n n n}
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:map!, '(a = Array.new(1000); a.map! {|x| "n"}; a)')
+    x.report(:map, '(a = Array.new(1000); a.map {|x| "n"})')
+    x.report(:shovel, '(a = []; 1000.times { a << "n" }; a)')
+
+    x.compare!
+  end
+end

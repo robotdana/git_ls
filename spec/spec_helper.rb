@@ -11,6 +11,7 @@ end
 require 'bundler/setup'
 require 'simplecov' if RUBY_PLATFORM != 'java'
 require 'git_ls'
+require 'rspec'
 require_relative 'support/temp_dir_helper'
 
 RSpec.configure do |config|
