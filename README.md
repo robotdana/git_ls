@@ -4,7 +4,7 @@ Parses the .git/index file like `git ls-files` does.
 
 - faster than doing the system call to git
 - doesn't require git to be installed
-- tested against ruby 2.4 - 2.7 and jruby
+- tested against ruby 2.4 - 3.0.0.preview1 and jruby
 
 ## Installation
 
