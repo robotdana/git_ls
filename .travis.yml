@@ -2,10 +2,14 @@
 language: ruby
 cache: bundler
 rvm:
-  - 3
   - 2.7
   - 2.6
   - 2.5
   - 2.4
   - jruby
 before_install: sudo apt-get install git && gem install bundler -v 2.1.4
+
+jobs:
+  include:
+    name: 'Ruby: 3.0.0.preview1'
+    before_install: rvm get head && rvm use --install --binary 3.0.0.preview1 && sudo apt-get install git && gem install bundler -v 2.1.4
