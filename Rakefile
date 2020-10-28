@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# typed: false
+
 require 'bundler/gem_tasks'
 require 'rspec/core/rake_task'
 RSpec::Core::RakeTask.new(:spec)
@@ -8,11 +10,11 @@ if RUBY_PLATFORM == 'java'
   task default: %i{spec build}
 else
   require 'rubocop/rake_task'
-  require 'spellr/rake_task'
-  require 'leftovers/rake_task'
+  # require 'spellr/rake_task'
+  # require 'leftovers/rake_task'
   RuboCop::RakeTask.new
-  Spellr::RakeTask.generate_task
-  Leftovers::RakeTask.generate_task
+  # Spellr::RakeTask.generate_task
+  # Leftovers::RakeTask.generate_task
 
-  task default: %i{spec rubocop spellr leftovers build}
+  task default: %i{spec rubocop build}
 end

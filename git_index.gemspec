@@ -30,8 +30,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'benchmark-ips'
   spec.add_development_dependency 'sorbet'
   spec.add_development_dependency 'bundler', '>= 2'
-  spec.add_development_dependency 'fast_ignore', '>= 0.15.1'
-  spec.add_development_dependency 'leftovers'
+  # spec.add_development_dependency 'fast_ignore', '>= 0.15.1'
+  # spec.add_development_dependency 'leftovers'
   spec.add_development_dependency 'pry', '> 0'
   spec.add_development_dependency 'rake', '>= 12.3.3'
   spec.add_development_dependency 'rspec'
@@ -39,5 +39,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rubocop-performance', '>= 1.8.1'
   spec.add_development_dependency 'rubocop-rspec', '= 1.44.1'
   spec.add_development_dependency 'simplecov', '~> 0.18.5'
-  spec.add_development_dependency 'spellr'
+  # spec.add_development_dependency 'spellr'
 end
