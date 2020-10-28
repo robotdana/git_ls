@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_development_dependency 'benchmark-ips'
+  spec.add_development_dependency 'sorbet'
   spec.add_development_dependency 'bundler', '>= 2'
   spec.add_development_dependency 'fast_ignore', '>= 0.15.1'
   spec.add_development_dependency 'leftovers'
