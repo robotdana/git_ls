@@ -11,11 +11,15 @@ if RUBY_PLATFORM == 'java'
   task default: %i{spec build}
 else
   require 'rubocop/rake_task'
-  # require 'spellr/rake_task'
-  # require 'leftovers/rake_task'
+  require 'spellr/rake_task'
+  require 'leftovers/rake_task'
   RuboCop::RakeTask.new
-  # Spellr::RakeTask.generate_task
-  # Leftovers::RakeTask.generate_task
+  Spellr::RakeTask.generate_task
+  Leftovers::RakeTask.generate_task
 
-  task default: %i{spec rubocop build}
+  task :sorbet do
+    exit 1 unless system('bundle exec srb tc')
+  end
+
+  task default: %i{spec sorbet rubocop spellr leftovers build}
 end

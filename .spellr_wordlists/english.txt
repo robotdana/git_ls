@@ -28,6 +28,7 @@ rvm
 sharedindex
 sherson
 simplecov
+srb
 sudo
 tmp
 usr
