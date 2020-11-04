@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # Usage:
@@ -32,11 +33,15 @@ module GitLS # rubocop:disable Metrics/ModuleLength
       # 4-byte version number:
       # The current supported versions are 2, 3 and 4.
       # 32-bit number of index entries.
-      sig = file.read(4, buf)
+      file.read(4, buf)
+      sig = buf
       raise ::GitLS::Error, ".git/index file not found at '#{path}'" unless sig == 'DIRC'
 
-      git_index_version = file.read(4, buf).unpack1('N')
-      entries = file.read(4, buf).unpack1('N')
+      file.read(4, buf)
+      git_index_version = buf.unpack1('N')
+
+      file.read(4, buf)
+      entries = buf.unpack1('N')
 
       files = ::Array.new(entries)
       files = case git_index_version
@@ -121,7 +126,8 @@ module GitLS # rubocop:disable Metrics/ModuleLength
 
         next unless literal_length > 0
 
-        words = file.read(8 * literal_length, buf).unpack('B64' * literal_length)
+        file.read(8 * literal_length, buf)
+        words = buf.unpack('B64' * literal_length)
         words.each do |word|
           word.each_char.reverse_each do |char|
             yield(uncompressed_pos) if char == '1'
@@ -183,7 +189,7 @@ module GitLS # rubocop:disable Metrics/ModuleLength
 
     def files_4(files, file) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       prev_entry_path = ''
-      files.map! do
+      files.map! do # rubocop:disable Metrics/BlockLength
         file.seek(60, 1) # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
         flags = file.getbyte
         extended_flag = (flags & 0b0100_0000) > 0
@@ -203,7 +209,7 @@ module GitLS # rubocop:disable Metrics/ModuleLength
         n = 1
         while (prev_read_offset & 0b1000_0000) > 0
           read_offset += (prev_read_offset & 0b0111_1111)
-          read_offset += 2**(7 * n)
+          read_offset += Integer(2**(7 * n))
           n += 1
           prev_read_offset = file.getbyte
         end
@@ -212,7 +218,8 @@ module GitLS # rubocop:disable Metrics/ModuleLength
         initial_part_length = prev_entry_path.bytesize - read_offset
 
         if length < 0xFFF
-          rest = file.read(length - initial_part_length)
+          rest = +''
+          file.read(length - initial_part_length, rest)
           file.seek(1, 1) # the NUL
           # :nocov:
         else
@@ -224,8 +231,8 @@ module GitLS # rubocop:disable Metrics/ModuleLength
           # :nocov:
         end
 
-        prev_entry_path = prev_entry_path.byteslice(0, initial_part_length) + rest
-        prev_entry_path.force_encoding(Encoding::UTF_8)
+        prev_entry_path = +"#{prev_entry_path.byteslice(0, initial_part_length)}#{rest}"
+        prev_entry_path.force_encoding(::Encoding::UTF_8)
       end
     end
   end

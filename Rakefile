@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# typed: false
+
+require 'bundler/setup'
 require 'bundler/gem_tasks'
 require 'rspec/core/rake_task'
 RSpec::Core::RakeTask.new(:spec)
@@ -14,5 +17,9 @@ else
   Spellr::RakeTask.generate_task
   Leftovers::RakeTask.generate_task
 
-  task default: %i{spec rubocop spellr leftovers build}
+  task :sorbet do
+    exit 1 unless system('bundle exec srb tc')
+  end
+
+  task default: %i{spec sorbet rubocop spellr leftovers build}
 end

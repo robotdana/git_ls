@@ -1,12 +1,13 @@
+# typed: strict
 # frozen_string_literal: true
 
-if RUBY_PLATFORM != 'java'
-  module Warning # leftovers:allow
-    def warn(msg) # leftovers:allow
-      raise msg
-    end
-  end
-end
+# if RUBY_PLATFORM != 'java'
+#   module Warning # leftovers:allow
+#     def warn(msg) # leftovers:allow
+#       raise msg
+#     end
+#   end
+# end
 
 require 'bundler/setup'
 require 'simplecov' if RUBY_PLATFORM != 'java'
