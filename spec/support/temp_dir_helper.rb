@@ -26,13 +26,17 @@ module TempDirHelper
     end
   end
 
-  def within_temp_dir(git_init: true)
+  def within_temp_dir(git_init: true) # rubocop:disable Metrics/MethodLength
     dir = Pathname.new(Dir.mktmpdir)
     original_dir = Dir.pwd
     Dir.chdir(dir)
 
     extend WithinTempDir
-    `git init` if git_init
+    if git_init
+      `git init`
+      `git config user.email rspec@example.com`
+      `git config user.name "RSpec runner"`
+    end
     yield
   ensure
     Dir.chdir(original_dir)
