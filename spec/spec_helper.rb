@@ -10,7 +10,7 @@
 # end
 
 require 'bundler/setup'
-require 'simplecov' if RUBY_PLATFORM != 'java'
+require 'simplecov' if ENV['COVERAGE']
 require 'git_ls'
 require 'rspec'
 require_relative 'support/temp_dir_helper'
