@@ -8,7 +8,7 @@ SimpleCov.start do
   else
     minimum_coverage 100
   end
-  formatter = SimpleCov::Formatter::MultiFormatter.new([
+  self.formatter = SimpleCov::Formatter::MultiFormatter.new([
     SimpleCov::Formatter::HTMLFormatter,
     SimpleCov::Formatter::Console
   ])

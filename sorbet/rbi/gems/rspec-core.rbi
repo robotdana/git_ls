@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/rspec-core/all/rspec-core.rbi
 #
-# rspec-core-3.9.3
+# rspec-core-3.10.0
 
 module RSpec
   def self.clear_examples; end
@@ -972,6 +972,7 @@ class RSpec::Core::OutputWrapper
   def lineno=(*args, &block); end
   def lines(*args, &block); end
   def method_missing(name, *args, &block); end
+  def nread(*args, &block); end
   def output; end
   def output=(arg0); end
   def pathconf(*args, &block); end
@@ -991,6 +992,7 @@ class RSpec::Core::OutputWrapper
   def readline(*args, &block); end
   def readlines(*args, &block); end
   def readpartial(*args, &block); end
+  def ready?(*args, &block); end
   def reopen(*args, &block); end
   def respond_to?(name, priv = nil); end
   def rewind(*args, &block); end
@@ -1009,6 +1011,9 @@ class RSpec::Core::OutputWrapper
   def tty?(*args, &block); end
   def ungetbyte(*args, &block); end
   def ungetc(*args, &block); end
+  def wait(*args, &block); end
+  def wait_readable(*args, &block); end
+  def wait_writable(*args, &block); end
   def write(*args, &block); end
   def write_nonblock(*args, &block); end
 end
@@ -1078,6 +1083,9 @@ class RSpec::Core::Configuration
   def dry_run; end
   def dry_run=(arg0); end
   def dry_run?; end
+  def error_exit_code; end
+  def error_exit_code=(arg0); end
+  def error_exit_code?; end
   def error_stream; end
   def error_stream=(arg0); end
   def error_stream?; end
@@ -1252,6 +1260,7 @@ module RSpec::Core::Configuration::Readers
   def drb; end
   def drb_port; end
   def dry_run; end
+  def error_exit_code; end
   def error_stream; end
   def example_status_persistence_file_path; end
   def exclude_pattern; end
@@ -1329,6 +1338,7 @@ end
 class RSpec::Core::Runner
   def configuration; end
   def configure(err, out); end
+  def exit_code(examples_passed = nil); end
   def initialize(options, configuration = nil, world = nil); end
   def options; end
   def persist_example_statuses; end

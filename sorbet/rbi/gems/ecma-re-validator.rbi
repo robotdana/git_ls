@@ -5,11 +5,10 @@
 #
 # If you would like to make changes to this file, great! Please create the gem's shim here:
 #
-#   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/rspec/all/rspec.rbi
+#   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/ecma-re-validator/all/ecma-re-validator.rbi
 #
-# rspec-3.10.0
+# ecma-re-validator-0.2.1
 
-module RSpec
-end
-module RSpec::Version
+module EcmaReValidator
+  def self.valid?(input); end
 end
