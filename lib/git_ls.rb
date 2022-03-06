@@ -13,12 +13,12 @@ module GitLS # rubocop:disable Metrics/ModuleLength
     def files(path = nil)
       path = path ? ::File.join(path, '.git/index') : '.git/index'
 
-      read(path, false)
+      read(path)
     end
 
     private
 
-    def read(path, _return_headers_only) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+    def read(path) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       begin
         # reading the whole file into memory is faster than lots of ::File#read
         # the biggest it's going to be is 10s of megabytes, well within ram.
@@ -74,7 +74,7 @@ module GitLS # rubocop:disable Metrics/ModuleLength
 
       sha = file.read(20, buf)
 
-      split_files = read("#{::File.dirname(path)}/sharedindex.#{sha.unpack1('H*')}", false)
+      split_files = read("#{::File.dirname(path)}/sharedindex.#{sha.unpack1('H*')}")
 
       ewah_each_value(file, buf) do |pos|
         split_files[pos] = nil
