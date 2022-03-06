@@ -19,6 +19,7 @@ nuls
 params
 pwd
 quotepath
+rbs
 rdoc
 readme
 rspec
@@ -29,9 +30,11 @@ sharedindex
 sherson
 simplecov
 srb
+steepfile
 sudo
 tmp
 txt
+untyped
 usr
 utf
 warmup

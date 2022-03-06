@@ -279,7 +279,7 @@ benchmark('ignore-seek-skip') do
   skip_str = "x#{skip_n}n"
   n_str = 'n'
 
-  file.write("#{('c' * skip_n)}ab")
+  file.write("#{'c' * skip_n}ab")
   file.rewind
 
   _, val = file.read(skip_n_plus_2).unpack(ignore_str)
@@ -320,7 +320,7 @@ benchmark('stringio-ignore-seek-skip') do
   skip_str = "x#{skip_n}n"
   n_str = 'n'
 
-  file.write("#{('c' * skip_n)}ab")
+  file.write("#{'c' * skip_n}ab")
   file.rewind
 
   _, val = file.read(skip_n_plus_2).unpack(ignore_str)
@@ -437,7 +437,7 @@ end
 
 benchmark('shift-div') do
   raise unless (0b1_0000_0000 >> 8) == 1
-  raise unless (0b1_0000_0000 / 256) == 1
+  raise unless (0b1_0000_0000 / 256) == 1 # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
   raise unless (0b1_1111_1111 >> 8) == 1
   raise unless (0b1_1111_1111 / 256) == 1
 

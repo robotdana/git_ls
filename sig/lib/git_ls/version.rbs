@@ -1,0 +1,3 @@
+module GitLS
+  VERSION: ::String
+end

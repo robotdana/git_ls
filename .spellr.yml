@@ -1,3 +1,7 @@
 excludes:
   - vendor
   - sorbet
+
+languages:
+  ruby:
+    includes: ['*.rbs', Steepfile]

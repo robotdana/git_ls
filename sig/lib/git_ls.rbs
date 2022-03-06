@@ -1,0 +1,31 @@
+module GitLS
+  module Error
+  end
+  class MissingFileError < ::Errno::ENOENT
+    include ::GitLS::Error
+  end
+  class TruncatedFileError < ::EOFError
+    include ::GitLS::Error
+  end
+  class InvalidFileError < ::StandardError
+    include ::GitLS::Error
+  end
+
+  def self.files: (?String? path) -> Array[String]
+
+  private
+
+  def self.read: (String path) -> Array[String]
+
+  def self.read_extensions: (Array[String] files, StringIO file, String path, String buf) -> Array[String]
+
+  def self.read_link_extension: (Array[String] files, StringIO file, String path, String buf) -> Array[String]
+
+  def self.ewah_each_value: (StringIO file, String buf) { (Integer) -> void } -> void
+
+  def self.files_2: (Array[String] files, StringIO file) -> Array[String]
+
+  def self.files_3: (Array[String] files, StringIO file) -> Array[String]
+
+  def self.files_4: (Array[String] files, StringIO file) -> Array[String]
+end
