@@ -1,4 +1,6 @@
-require: rubocop-rspec
+require:
+  - rubocop-rspec
+  - rubocop-rake
 
 # Reference:
 # https://rubocop.readthedocs.io/en/latest/
@@ -113,7 +115,7 @@ Metrics:
   CountComments: false
 
 Metrics/BlockLength:
-  ExcludedMethods:
+  AllowedMethods:
     - configure
     - describe
     - context
@@ -124,6 +126,9 @@ Metrics/CyclomaticComplexity:
   Enabled: false
 
 Metrics/PerceivedComplexity:
+  Enabled: false
+
+Metrics/ClassLength:
   Enabled: false
 
 RSpec:
@@ -141,7 +146,7 @@ RSpec/ExampleLength:
 RSpec/ExpectActual:
   Enabled: false
 
-RSpec/FilePath:
+RSpec/SpecFilePathFormat:
   Enabled: false
 
 # Multiple expectations are useful

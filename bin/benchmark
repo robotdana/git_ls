@@ -46,7 +46,7 @@ def benchmark(label)
 end
 
 benchmark('getbyte-readbyte') do
-  file = ::Tempfile.new
+  file = Tempfile.new
   file.write('a')
   file.rewind
 
@@ -74,7 +74,7 @@ benchmark('getbyte-readbyte') do
 end
 
 benchmark('stringio-getbyte-readbyte') do
-  file = ::StringIO.new
+  file = StringIO.new
   file.write('a')
   file.rewind
 
@@ -99,7 +99,7 @@ benchmark('stringio-getbyte-readbyte') do
 end
 
 benchmark('2byte') do
-  file = ::Tempfile.new
+  file = Tempfile.new
   file.write('ab')
   file.rewind
 
@@ -125,8 +125,8 @@ benchmark('2byte') do
 end
 
 benchmark('stringio-2byte') do
-  file = ::StringIO.new
-  buf = ::String.new
+  file = StringIO.new
+  buf = String.new
   file.write('ab' * 31)
   file.rewind
 
@@ -159,12 +159,12 @@ benchmark('stringio-2byte') do
 end
 
 benchmark('stringio-4byte') do
-  file = ::StringIO.new
-  buf = ::String.new
+  file = StringIO.new
+  buf = String.new
   file.write('ab' * 32)
   file.rewind
 
-  raise unless (((file.getbyte * 256) + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte == 0x61626162
+  raise unless (((((file.getbyte * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte == 0x61626162
 
   file.rewind
   raise unless file.read(4).unpack1('N') == 0x61626162
@@ -176,7 +176,7 @@ benchmark('stringio-4byte') do
   file.rewind
 
   file.seek(60, 1)
-  raise unless (((file.getbyte * 256) + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte == 0x61626162
+  raise unless (((((file.getbyte * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte == 0x61626162
 
   file.rewind
   raise unless file.read(64).unpack1('x60N') == 0x61626162
@@ -192,13 +192,14 @@ benchmark('stringio-4byte') do
     x.config(config)
 
     x.report(:getbyte_getbyte) do
-      (((file.getbyte * 256) + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte; file.rewind
+      (((((file.getbyte * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte; file.rewind
     end
     x.report(:read_buf_unpack) { file.read(4, buf).unpack1('N'); file.rewind }
     x.report(:unpack_seek) { file.string.unpack1('N'); file.seek(4, 1); file.rewind }
 
     x.report(:seek_getbyte_getbyte) do
-      file.seek(60, 1); (((file.getbyte * 256) + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte; file.rewind
+      file.seek(60, 1);
+      (((((file.getbyte * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte; file.rewind
     end
     x.report(:seek_unpack_seek) { file.string.unpack1('x60N'); file.seek(4, 1); file.rewind }
     x.report(:x_unpack_seek) { file.string.unpack1('x60N'); file.seek(64, 1); file.rewind }
@@ -210,13 +211,13 @@ benchmark('stringio-4byte') do
 end
 
 benchmark('stringio-8byte') do
-  file = ::StringIO.new
-  buf = ::String.new
+  file = StringIO.new
+  buf = String.new
   file.write('ab' * 34)
   file.rewind
 
-  val = ((((((file.getbyte * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 +
-  file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte
+  val = (((((((((((((file.getbyte * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte) * 256) +
+  file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte
 
   raise unless val == 0x6162616261626162
 
@@ -230,8 +231,8 @@ benchmark('stringio-8byte') do
   file.rewind
 
   file.seek(60, 1)
-  val = ((((((file.getbyte * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 +
-  file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte
+  val = (((((((((((((file.getbyte * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte) * 256) +
+  file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte
   raise unless val == 0x6162616261626162
 
   file.rewind
@@ -248,8 +249,8 @@ benchmark('stringio-8byte') do
     x.config(config)
 
     x.report(:getbyte_getbyte) do
-      ((((((file.getbyte * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 +
-      file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte
+      (((((((((((((file.getbyte * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte) * 256) +
+      file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte
       file.rewind
     end
     x.report(:read_buf_unpack) { file.read(8, buf).unpack1('Q>'); file.rewind }
@@ -257,8 +258,8 @@ benchmark('stringio-8byte') do
 
     x.report(:seek_getbyte_getbyte) do
       file.seek(60, 1)
-      ((((((file.getbyte * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 +
-      file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte) * 256 + file.getbyte
+      (((((((((((((file.getbyte * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte) * 256) +
+      file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte) * 256) + file.getbyte
       file.rewind
     end
     x.report(:seek_unpack_seek) { file.string.unpack1('x60Q>'); file.seek(8, 1); file.rewind }
@@ -271,7 +272,7 @@ benchmark('stringio-8byte') do
 end
 
 benchmark('ignore-seek-skip') do
-  file = ::Tempfile.new
+  file = Tempfile.new
   skip_n = 600
 
   skip_n_plus_2 = skip_n + 2
@@ -279,7 +280,7 @@ benchmark('ignore-seek-skip') do
   skip_str = "x#{skip_n}n"
   n_str = 'n'
 
-  file.write("#{('c' * skip_n)}ab")
+  file.write("#{'c' * skip_n}ab")
   file.rewind
 
   _, val = file.read(skip_n_plus_2).unpack(ignore_str)
@@ -312,7 +313,7 @@ benchmark('ignore-seek-skip') do
 end
 
 benchmark('stringio-ignore-seek-skip') do
-  file = ::StringIO.new
+  file = StringIO.new
   skip_n = 600
 
   skip_n_plus_2 = skip_n + 2
@@ -320,7 +321,7 @@ benchmark('stringio-ignore-seek-skip') do
   skip_str = "x#{skip_n}n"
   n_str = 'n'
 
-  file.write("#{('c' * skip_n)}ab")
+  file.write("#{'c' * skip_n}ab")
   file.rewind
 
   _, val = file.read(skip_n_plus_2).unpack(ignore_str)
@@ -350,7 +351,7 @@ benchmark('stringio-ignore-seek-skip') do
 end
 
 benchmark('1byte') do
-  file = ::Tempfile.new
+  file = Tempfile.new
   file.write('a')
   file.rewind
 
@@ -376,11 +377,11 @@ benchmark('1byte') do
 end
 
 benchmark('read-buf') do
-  file = ::Tempfile.new
+  file = Tempfile.new
   file.write('ab')
   file.rewind
 
-  buf = ::String.new
+  buf = String.new
 
   Benchmark.ips do |x|
     x.config(config)
@@ -397,11 +398,11 @@ benchmark('read-buf') do
 end
 
 benchmark('pos-seek') do
-  file = ::Tempfile.new
+  file = Tempfile.new
   file.write('pos')
   file.rewind
 
-  buf = ::String.new
+  buf = String.new
 
   raise unless (file.rewind; file.pos += 1; file.pos += 2; file.pos) == 3
   raise unless (file.rewind; file.seek(1, 1); file.seek(2, 1); file.pos) == 3
@@ -430,6 +431,19 @@ benchmark('shift-mult') do
 
     x.report(:shift, '2 << 8')
     x.report(:mult, '2 * 256')
+
+    x.compare!
+  end
+end
+
+benchmark('shift-exp') do
+  raise unless (1 << 256) == (2**256)
+
+  Benchmark.ips do |x|
+    x.config(config)
+
+    x.report(:shift, '1 << 256')
+    x.report(:exp, '2 ** 256')
 
     x.compare!
   end
@@ -508,7 +522,7 @@ end
 
 benchmark('map-shovel') do
   raise unless (a = Array.new(10); a.map! { |_x| 'n' }; a) == %w{n n n n n n n n n n}
-  raise unless (a = []; 10.times { a << 'n' }; a) == %w{n n n n n n n n n n}
+  raise unless (a = []; 10.times { a << 'n' }; a) == %w{n n n n n n n n n n} # rubocop:disable Lint/LiteralAssignmentInCondition
 
   Benchmark.ips do |x|
     x.config(config)

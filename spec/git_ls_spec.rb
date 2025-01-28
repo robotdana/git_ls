@@ -1,9 +1,8 @@
-# typed: false
 # frozen_string_literal: true
 
 RSpec.describe GitLS do
   it 'has a version number' do
-    expect(described_class::VERSION).not_to be nil
+    expect(described_class::VERSION).not_to be_nil
   end
 
   shared_examples 'git ls-files' do
@@ -18,7 +17,7 @@ RSpec.describe GitLS do
       end
 
       it 'can be given the file path exactly' do
-        expect(described_class.files(::Dir.pwd)).to eq(`git ls-files -z`.split("\0"))
+        expect(described_class.files(Dir.pwd)).to eq(`git ls-files -z`.split("\0"))
           .and(eq(['bar/bar', 'bar/foo', 'baz', 'foo/bar', 'foo/foo']))
       end
 
@@ -29,7 +28,7 @@ RSpec.describe GitLS do
         end
 
         it 'matches git-ls output' do
-          expect(::File.exist?('bar/bar')).to be false
+          expect(File.exist?('bar/bar')).to be false
 
           expect(described_class.files).to eq(`git ls-files -z`.split("\0"))
             .and(eq(['bar/bar', 'bar/foo', 'baz', 'foo/bar', 'foo/foo']))
@@ -180,7 +179,7 @@ RSpec.describe GitLS do
         end
 
         describe 'compression' do
-          [63, 64, 65, 90, 127, 128, 129, 300, 600].each do |n| # rubocop:disable Metrics/BlockLength
+          [63, 64, 65, 90, 127, 128, 129, 300, 600].each do |n|
             context "with #{n} files deleted" do
               it 'matches git-ls output' do
                 filenames = Array.new(n).map.with_index { |_, i| "dir/#{i}" }
@@ -287,9 +286,9 @@ RSpec.describe GitLS do
           it 'raises an error' do
             create_file_list 'foo/bar'
 
-            ::File.write('.git/index', ::File.read('.git/index').gsub!('link', 'beep'))
+            File.write('.git/index', File.read('.git/index').gsub!('link', 'beep'))
 
-            expect { described_class.files }.to raise_error(::GitLS::Error)
+            expect { described_class.files }.to raise_error(GitLS::Error)
           end
         end
 
@@ -308,7 +307,7 @@ RSpec.describe GitLS do
             create_file_list 'foo/bar'
             `git update-index --force-untracked-cache`
 
-            ::File.write('.git/index', ::File.read('.git/index').gsub!('UNTR', 'BEEP'))
+            File.write('.git/index', File.read('.git/index').gsub!('UNTR', 'BEEP'))
 
             expect(described_class.files).to eq(`git ls-files -z`.split("\0"))
               .and(eq(['foo/bar']))

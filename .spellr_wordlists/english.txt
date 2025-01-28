@@ -1,4 +1,5 @@
 baz
+bitshift
 changelog
 codebase
 cov

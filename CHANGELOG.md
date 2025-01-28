@@ -1,3 +1,6 @@
+# 0.5.1
+- Test with new ruby versions, meaningless performance tweak using bitshift instead of exponent in one place.
+
 # 0.5.0
 - Major Performance Improvements
 

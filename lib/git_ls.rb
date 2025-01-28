@@ -1,10 +1,10 @@
-# typed: true
 # frozen_string_literal: true
 
 # Usage:
 #   GitLS.files -> Array of strings as files.
 #   This will be identical output to git ls-files
 require 'stringio'
+require_relative 'git_ls/version'
 
 module GitLS # rubocop:disable Metrics/ModuleLength
   class Error < StandardError; end
@@ -144,7 +144,7 @@ module GitLS # rubocop:disable Metrics/ModuleLength
       files.map! do
         file.seek(60, 1) # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
 
-        length = (file.getbyte & 0xF) * 256 + file.getbyte # find the 12 byte length
+        length = ((file.getbyte & 0xF) * 256) + file.getbyte # find the 12 byte length
         if length < 0xFFF
           path = file.read(length)
           # :nocov:
@@ -167,7 +167,7 @@ module GitLS # rubocop:disable Metrics/ModuleLength
         file.seek(60, 1) # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
         flags = file.getbyte
         extended_flag = (flags & 0b0100_0000) > 0
-        length = (flags & 0xF) * 256 + file.getbyte # find the 12 byte length
+        length = ((flags & 0xF) * 256) + file.getbyte # find the 12 byte length
         file.seek(2, 1) if extended_flag
 
         if length < 0xFFF
@@ -193,7 +193,7 @@ module GitLS # rubocop:disable Metrics/ModuleLength
         file.seek(60, 1) # skip 60 bytes (40 bytes of stat, 20 bytes of sha)
         flags = file.getbyte
         extended_flag = (flags & 0b0100_0000) > 0
-        length = (flags & 0xF) * 256 + file.getbyte # find the 12 byte length
+        length = ((flags & 0xF) * 256) + file.getbyte # find the 12 byte length
         file.seek(2, 1) if extended_flag
 
         # documentation for this number from
@@ -209,7 +209,7 @@ module GitLS # rubocop:disable Metrics/ModuleLength
         n = 1
         while (prev_read_offset & 0b1000_0000) > 0
           read_offset += (prev_read_offset & 0b0111_1111)
-          read_offset += Integer(2**(7 * n))
+          read_offset += 1 << (7 * n)
           n += 1
           prev_read_offset = file.getbyte
         end
