@@ -18,7 +18,7 @@ group(:development) do
   gem 'rubocop-performance', '>= 1.8.1', require: false
   gem 'rubocop-rake', require: false
   gem 'rubocop-rspec', '>= 1.44.1', require: false
-  gem 'simplecov', '> 0.18.5', require: false
+  gem 'simplecov', '>= 0.18.5', require: false
   gem 'simplecov-console', require: false
   gem 'spellr', require: false
 end
