@@ -20,5 +20,5 @@ group(:development) do
   gem 'rubocop-rspec', '>= 1.44.1', require: false
   gem 'simplecov', '>= 0.18.5', require: false
   gem 'simplecov-console', require: false
-  gem 'spellr', require: false
+  gem 'spellr', require: false, platforms: :ruby
 end
